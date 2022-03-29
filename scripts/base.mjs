@@ -55,7 +55,11 @@ export class Autostake {
 
   async runNetwork(client){
     timeStamp('Running autostake')
-    await this.checkBalance(client)
+    const balance = await this.checkBalance(client)
+    if (!balance || balance < 1_000) {
+      timeStamp('Bot balance is too low')
+      return
+    }
 
     timeStamp('Finding delegators...')
     const addresses = await this.getDelegations(client).then(delegations => {
@@ -141,14 +145,10 @@ export class Autostake {
       .then(
         (balance) => {
           timeStamp("Bot balance is", balance.amount, balance.denom)
-          if (balance.amount < 1_000) {
-            timeStamp('Bot balance is too low')
-            process.exit()
-          }
+          return balance.amount
         },
         (error) => {
           timeStamp("ERROR:", error.message || error)
-          process.exit()
         }
       )
   }
@@ -159,7 +159,7 @@ export class Autostake {
       timeStamp("...batch", pages.length)
     }).catch(error => {
       timeStamp("ERROR:", error.message || error)
-      process.exit()
+      return []
     })
   }
 
@@ -182,7 +182,8 @@ export class Autostake {
   }
 
   getGrantValidators(client, delegatorAddress) {
-    return client.queryClient.getGrants(client.operator.botAddress, delegatorAddress, { timeout: 5000 })
+    let timeout = client.network.data.autostake?.delegatorTimeout || 5000
+    return client.queryClient.getGrants(client.operator.botAddress, delegatorAddress, { timeout })
       .then(
         (result) => {
           if (result.claimGrant && result.stakeGrant) {
@@ -228,7 +229,8 @@ export class Autostake {
       return
     }
 
-    const withdrawAddress = await client.queryClient.getWithdrawAddress(address, {timeout: 5000})
+    let timeout = client.network.data.autostake?.delegatorTimeout || 5000
+    const withdrawAddress = await client.queryClient.getWithdrawAddress(address, { timeout })
     if(withdrawAddress && withdrawAddress !== address){
       timeStamp(address, 'has a different withdraw address:', withdrawAddress)
       return
@@ -295,7 +297,8 @@ export class Autostake {
   }
 
   totalRewards(client, address, validators) {
-    return client.queryClient.getRewards(address, { timeout: 5000 })
+    let timeout = client.network.data.autostake?.delegatorTimeout || 5000
+    return client.queryClient.getRewards(address, { timeout })
       .then(
         (rewards) => {
           const total = Object.values(rewards).reduce((sum, item) => {
