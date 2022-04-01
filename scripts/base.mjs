@@ -38,10 +38,18 @@ export class Autostake {
 
         if(!client) return timeStamp('Skipping')
 
-        timeStamp('Using REST URL', client.network.restUrl)
-        timeStamp('Using RPC URL', client.network.rpcUrl)
+        const { restUrl, rpcUrl } = client.network
 
-        if(!data.overriden) timeStamp('You are using public nodes, script may fail with many delegations. Check the README to use your own')
+        timeStamp('Using REST URL', restUrl)
+        timeStamp('Using RPC URL', rpcUrl)
+
+        const usingDirectory = !![restUrl, rpcUrl].find(el => el.match("cosmos.directory"))
+
+        if(usingDirectory){
+          timeStamp('You are using public nodes, script may fail with many delegations. Check the README to use your own')
+          timeStamp('Delaying briefly to reduce load...')
+          await new Promise(r => setTimeout(r, (Math.random() * 31) * 1000));
+        } 
 
         try {
           await this.runNetwork(client)
@@ -116,7 +124,7 @@ export class Autostake {
       timeStamp("!! You should switch to the correct path unless you have grants. Check the README !!")
     } 
 
-    const operatorData = data.operators.find(el => el.botAddress === botAddress)
+    const operatorData = network.operators.find(el => el.botAddress === botAddress)
 
     if (!operatorData) return timeStamp('Not an operator')
     if (!network.authzSupport) return timeStamp('No Authz support')

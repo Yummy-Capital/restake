@@ -4,13 +4,27 @@ import SigningClient from './SigningClient.mjs'
 import ApyClient from '../ApyClient.mjs'
 import Operator from './Operator.mjs'
 import Chain from './Chain.mjs'
+import CosmosDirectory from './CosmosDirectory.mjs'
 
 const Network = async (data, withoutQueryClient) => {
 
   const chain = await Chain(data)
+  const directory = CosmosDirectory()
+  const operators = data.operators || (await directory.getOperators(data.name)).map(el => {
+    return {
+      address: el.address,
+      botAddress: el.restake.address,
+      runTime: el.restake.run_time,
+      minimumReward: el.restake.minimum_reward
+    }
+  })
+
+  const rpcUrl = data.rpcUrl || directory.rpcUrl(data.name)
+  const restUrl = data.restUrl || directory.restUrl(data.name)
+
   let queryClient
   if(!withoutQueryClient){
-    queryClient = await QueryClient(chain.chainId, data.rpcUrl, data.restUrl)
+    queryClient = await QueryClient(chain.chainId, rpcUrl, restUrl)
   }
 
   const signingClient = (wallet, key) => {
@@ -38,15 +52,17 @@ const Network = async (data, withoutQueryClient) => {
   }
 
   const sortOperators = () => {
-    const random = _.shuffle(data.operators)
+    const random = _.shuffle(operators)
     if(data.ownerAddress){
       return _.sortBy(random, ({address}) => address === data.ownerAddress ? 0 : 1)
     }
     return random
   }
 
-  const getValidators = () => {
-    return queryClient.getAllValidators(150)
+  const getValidators = (opts) => {
+    opts = opts || {}
+    opts.status = opts.status || 'BOND_STATUS_BONDED'
+    return queryClient.getAllValidators(150, opts)
   }
 
   return {
@@ -67,7 +83,7 @@ const Network = async (data, withoutQueryClient) => {
     testAddress: data.testAddress,
     restUrl: queryClient && queryClient.restUrl,
     rpcUrl: queryClient && queryClient.rpcUrl,
-    operators: data.operators,
+    operators: operators,
     authzSupport: chain.authzSupport,
     data,
     chain,
