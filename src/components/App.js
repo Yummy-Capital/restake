@@ -180,6 +180,12 @@ class App extends React.Component {
                   <span role="button"><span className={'nav-link disabled clipboard' + (this.state.copied ? ' copied' : '')}>{this.state.address}</span></span>
                 </CopyToClipboard>
               </li>
+              <li className="nav-item d-none d-lg-block d-xl-none">
+                <CopyToClipboard text={this.state.address}
+                  onCopy={() => this.setCopied()}>
+                  <span role="button"><span style={{maxWidth: 300}} className={'nav-link disabled small d-block text-truncate clipboard' + (this.state.copied ? ' copied' : '')}>{this.state.address}</span></span>
+                </CopyToClipboard>
+              </li>
               <li className="nav-item d-none d-md-block">
                 <span className="nav-link">
                   <Badge>
@@ -253,9 +259,16 @@ class App extends React.Component {
             <img src={PoweredByAkash} alt="Powered by Akash" width={200} />
           </a>
 
-          <a href="https://ecostake.com" target="_blank" rel="noreferrer" className="col-md-4 d-flex align-items-center justify-content-center me-lg-auto link-dark text-decoration-none">
-            <span className="d-none d-sm-inline me-1">Built with 💚&nbsp;</span> by ECO Stake 🌱
-          </a>
+          <div className="col-md-4 align-items-center text-center me-lg-auto">
+            <a href="https://ecostake.com" target="_blank" rel="noreferrer" className="link-dark text-decoration-none d-block mb-2">
+              <span className="d-none d-sm-inline">Built with 💚&nbsp;</span> by ECO Stake 🌱
+            </a>
+            {this.props.network?.usingDirectory && (
+              <a href="https://cosmos.directory" target="_blank" className="link-dark text-decoration-none d-block small">
+                <span className="d-none d-sm-inline">Interchain with</span> ⚛ cosmos.directory
+              </a>
+            )}
+          </div>
 
           <p className="col-md-4 mb-0 text-muted text-end justify-content-end d-none d-lg-flex">
             <GitHubButton href="https://github.com/eco-stake/restake" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star eco-stake/restake on GitHub">Star</GitHubButton>

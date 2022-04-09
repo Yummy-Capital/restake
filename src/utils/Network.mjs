@@ -1,26 +1,36 @@
 import _ from 'lodash'
+import { multiply, pow } from 'mathjs'
 import QueryClient from './QueryClient.mjs'
 import SigningClient from './SigningClient.mjs'
 import ApyClient from '../ApyClient.mjs'
 import Operator from './Operator.mjs'
 import Chain from './Chain.mjs'
 import CosmosDirectory from './CosmosDirectory.mjs'
+import DesmosSigningClient from './DesmosSigningClient.mjs'
 
 const Network = async (data, withoutQueryClient) => {
+  const SIGNERS = {
+    desmos: DesmosSigningClient
+  }
 
   const chain = await Chain(data)
   const directory = CosmosDirectory()
-  const operators = data.operators || (await directory.getOperators(data.name)).map(el => {
-    return {
-      address: el.address,
-      botAddress: el.restake.address,
-      runTime: el.restake.run_time,
-      minimumReward: el.restake.minimum_reward
-    }
+  const validators = await directory.getValidators(data.name)
+  const operators = data.operators || validators.filter(el => el.restake).map(el => {
+    return Operator(el)
   })
 
   const rpcUrl = data.rpcUrl || directory.rpcUrl(data.name)
   const restUrl = data.restUrl || directory.restUrl(data.name)
+
+  const usingDirectory = !![restUrl, rpcUrl].find(el => {
+    const match = el => el.match("cosmos.directory")
+    if(Array.isArray(el)){
+      return el.find(match)
+    }else{
+      return match(el)
+    }
+  })
 
   let queryClient
   if(!withoutQueryClient){
@@ -29,26 +39,25 @@ const Network = async (data, withoutQueryClient) => {
 
   const signingClient = (wallet, key) => {
     if(!queryClient) return 
-
-    const gasPrice = data.gasPrice || '0.0025' + chain.denom
-    return SigningClient(queryClient.rpcUrl, chain.chainId, gasPrice, wallet, key)
+    
+    const defaultGasPrice = multiply(0.000000025, pow(10, chain.decimals)).toString() + chain.denom
+    const gasPrice = data.gasPrice || defaultGasPrice
+    const client = SIGNERS[data.name] || SigningClient
+    return client(queryClient.rpcUrl, gasPrice, wallet, key)
   }
 
   const apyClient = queryClient && ApyClient(chain, queryClient.rpcUrl, queryClient.restUrl)
 
-  const getOperator = (operators, operatorAddress) => {
+  const getOperator = (operatorAddress) => {
     return operators.find(elem => elem.address === operatorAddress)
   }
 
-  const getOperatorByBotAddress = (operators, botAddress) => {
+  const getOperatorByBotAddress = (botAddress) => {
     return operators.find(elem => elem.botAddress === botAddress)
   }
 
-  const getOperators = (validators) => {
-    return sortOperators().map(operator => {
-      const validator = validators[operator.address]
-      return Operator(operator, validator)
-    })
+  const getOperators = () => {
+    return sortOperators()
   }
 
   const sortOperators = () => {
@@ -61,8 +70,13 @@ const Network = async (data, withoutQueryClient) => {
 
   const getValidators = (opts) => {
     opts = opts || {}
-    opts.status = opts.status || 'BOND_STATUS_BONDED'
-    return queryClient.getAllValidators(150, opts)
+    return validators.filter(validator => {
+      if(opts.status) return validator.status === opts.status
+      return true
+    }).reduce(
+      (a, v) => ({ ...a, [v.operator_address]: v }),
+      {}
+    )
   }
 
   return {
@@ -83,11 +97,13 @@ const Network = async (data, withoutQueryClient) => {
     testAddress: data.testAddress,
     restUrl: queryClient && queryClient.restUrl,
     rpcUrl: queryClient && queryClient.rpcUrl,
-    operators: operators,
     authzSupport: chain.authzSupport,
+    validators,
+    operators,
     data,
     chain,
     queryClient,
+    usingDirectory,
     getApy: apyClient && apyClient.getApy,
     signingClient,
     getValidators,

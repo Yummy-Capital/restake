@@ -82,20 +82,18 @@ function NetworkSelect(props) {
       setError(false)
       Network(data, true).then(network => {
         setSelectedNetwork(network)
-      })
-      Network(data).then(network => {
-        setSelectedNetwork(network)
-        setValidators({})
-        network.getValidators().then(data => {
-          setValidators(data)
-          setLoading(false)
-        }, (error) => {
+        Network(data).then(network => {
+          if(network.connected){
+            setSelectedNetwork(network)
+            setValidators(network.getValidators())
+            setLoading(false)
+          }else{
+            throw false
+          }
+        }).catch(error => {
           setError('Unable to connect to this network currently. Try again later.')
           setLoading(false)
         })
-      }, (error) => {
-        setError('Unable to connect to this network currently. Try again later.')
-        setLoading(false)
       })
     }
   }
@@ -163,7 +161,7 @@ function NetworkSelect(props) {
             {!error && !selectedNetwork.authzSupport &&
               <p><em>This network does not support Authz yet. You can manually stake and compound for now</em></p>
             }
-            {!error && selectedNetwork.authzSupport && selectedNetwork.getOperators(validators).length < 1 &&
+            {!error && selectedNetwork.authzSupport && selectedNetwork.operators.length < 1 &&
               <p><em>This network supports Authz but there are no operators just yet. You can manually REStake for now</em></p>
             }
             {!loading
