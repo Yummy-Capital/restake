@@ -51,9 +51,9 @@
   },
   {
     "name": "dig",
-    "gasPrice": "0.0025udig",
+    "gasPrice": "0.01udig",
     "ownerAddress": "digvaloper136avwnuvvy94dqmtnaue2nfvjes8xr37h9rzay",
-    "authzSupport": false
+    "authzSupport": true
   },
   {
     "name": "bitcanna",
@@ -142,7 +142,8 @@
     "authzSupport": false
   },
   {
-    "name": "sommelier"
+    "name": "sommelier",
+    "authzSupport": true
   },
   {
     "name": "konstellation",
@@ -187,5 +188,17 @@
     "name": "decentr",
     "gasPrice": "0.025udec",
     "authzSupport": false
+  },
+  {
+    "name": "assetmantle",
+    "gasPrice": "0.025umntl",
+    "gasPriceStep": {
+      "low": 0,
+      "average": 0.025,
+      "high": 0.04
+    },
+    "ownerAddress": "mantlevaloper1fqs7gakxdmujtk0qufdzth5pfyspus3yx394zd",
+    "authzSupport": true,
+    "apyEnabled": true
   }
 ]

@@ -74,16 +74,18 @@ function NetworkFinder() {
       if(params.network != networkName){
         navigate("/" + networkName);
       }
-      Network(data).then(network => {
-        if(network.connected){
-          setState({ network: network })
-        }else{
-          throw false
-        }
-      }).catch(error => {
-        Network(data, true).then(network => {
-          setState({ network: network, loading: false })
+      const network = new Network(data)
+      network.load().then(() => {
+        return network.connect().then(() => {
+          if (network.connected) {
+            setState({ network: network })
+          } else {
+            throw false
+          }
         })
+      }).catch(error => {
+        console.log(error)
+        setState({ network: network, loading: false })
       })
     }
   }, [state.networks, state.network, params.network, navigate])
@@ -100,6 +102,15 @@ function NetworkFinder() {
     }
   }, [state.network])
 
+  useEffect(() => {
+    const validatorAddresses = state.validators && Object.keys(state.validators)
+    if(validatorAddresses && validatorAddresses.includes(params.validator)){
+      setState({ validator: state.validators[params.validator] })
+    }else if(state.validator){
+      setState({ validator: null })
+    }
+  }, [state.validators, params.validator])
+
   if (state.error) {
     return <AlertMessage message={state.error} variant="danger" dismissible={false} />
   }
@@ -115,7 +126,7 @@ function NetworkFinder() {
   }
 
   return <App networks={state.networks} network={state.network}
-  operators={state.operators} validators={state.validators}
+  operators={state.operators} validators={state.validators} validator={state.validator}
   changeNetwork={(network, validators) => changeNetwork(network, validators)}
   />;
 }

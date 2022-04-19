@@ -1,5 +1,6 @@
 import React from 'react'
 import Delegations from './Delegations'
+import AlertMessage from './AlertMessage';
 
 import {
   Spinner
@@ -10,7 +11,6 @@ class Wallet extends React.Component {
     super(props);
     this.state = {}
     this.getDelegations = this.getDelegations.bind(this);
-    this.onAddValidator = this.onAddValidator.bind(this);
   }
 
   componentDidMount() {
@@ -42,10 +42,6 @@ class Wallet extends React.Component {
     this.setState({refreshInterval: interval})
   }
 
-  onAddValidator(){
-    setTimeout(() => this.getDelegations(), 3_000)
-  }
-
   async getDelegations(hideError) {
     this.props.queryClient.getDelegations(this.props.address)
       .then(
@@ -61,14 +57,15 @@ class Wallet extends React.Component {
           });
         },
         (error) => {
-          this.setState({ isLoaded: true })
           if([404, 500].includes(error.response && error.response.status)){
             this.setState({
-              delegations: {}
+              delegations: {},
+              isLoaded: true
             });
           }else if(!hideError){
             this.setState({
-              error: 'Failed to load delegations. Please refresh.'
+              error: 'Failed to load delegations. API may be down.',
+              isLoaded: true
             });
           }
         }
@@ -87,7 +84,7 @@ class Wallet extends React.Component {
     }
     if (this.state.error) {
       return (
-        <p>Loading failed</p>
+        <AlertMessage message={this.state.error} />
       )
     }
     return (
@@ -98,12 +95,12 @@ class Wallet extends React.Component {
           balance={this.props.balance}
           operators={this.props.operators}
           validators={this.props.validators}
+          validator={this.props.validator}
           getBalance={this.props.getBalance}
           delegations={this.state.delegations}
           queryClient={this.props.queryClient}
           stargateClient={this.props.stargateClient}
-          getDelegations={this.getDelegations}
-          onAddValidator={this.onAddValidator} />
+          getDelegations={this.getDelegations} />
       </div>
     )
   }
