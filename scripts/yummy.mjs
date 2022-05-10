@@ -55,5 +55,5 @@ class Yummy extends Autostake {
 }
 
 const autostake = new Yummy();
-const networkName = process.argv[2];
-autostake.run(networkName);
+const networkNames = process.argv.slice(2, process.argv.length)
+autostake.run(networkNames);
