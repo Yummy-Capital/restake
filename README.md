@@ -21,6 +21,7 @@ A script is also provided which allows a validator to automatically search their
 - As of writing, Ledger is unable to send the necessary transactions to enable Authz. This is purely due to the way transactions are sent to a Ledger device and a workaround should be possible soon.
 - Authz is also not fully supported yet. Many chains are yet to update. The REStake UI will fall back to being a manual staking app with useful manual compounding features.
 - Currently REStake needs the browser extension version of Keplr, but WalletConnect and Keplr iOS functionality will be added ASAP.
+- RESTake requires Nodejs version 17.x or later, it will not work with earlier versions.
 
 ## Become an operator
 
@@ -61,7 +62,7 @@ Instructions are provided for Docker Compose and will be expanded later.
 
 ### Install Docker and Docker Compose
 
-Best bet is to follow the Docker official guides. Install Docker first, then Docker Compose.
+Best bet is to follow the Docker official guides. Install Docker first, then Docker Compose. In recent versions, Docker and Docker Compose may combined into a single installation.
 
 Docker: [docs.docker.com/get-docker](https://docs.docker.com/get-docker/)
 
@@ -83,7 +84,9 @@ cp .env.sample .env
 
 Running the autostake script manually is then simple.
 
-Note you might need `sudo` depending on your docker install.
+Note you might need `sudo` depending on your docker install. 
+
+Some docker versions utilize `docker compose` instead of `docker-compose`. If you run into issues, try substituting `docker compose`.
 
 ```bash
 docker-compose run --rm app npm run autostake
@@ -93,6 +96,12 @@ Pass network names to restrict the script to certain networks.
 
 ```bash
 docker-compose run --rm app npm run autostake osmosis akash regen
+```
+
+A _Dry Run_ script is also included, which runs the normal autostake script but skips sending the final TXs, and skips any health check pings.
+
+```bash
+docker-compose run --rm app npm run dryrun osmosis
 ```
 
 ### Updating your local version
@@ -118,15 +127,19 @@ Don't forget to [update often](#updating-your-local-version)!
 
 #### Using `crontab`
 
+Note: A helpful calculator for determining your REStake timer for `crontab` can be found here: https://crontab.guru/.
+
+Updated versions utilize `docker compose` instead of `docker-compose`. If you run into issues, try substituting `docker compose`.
+
 ```bash
 crontab -e
 
-0 21 * * * /bin/bash -c "cd restake && docker-compose run --rm app npm run autostake" > ./restake.log 2>&1
+0 21 * * * /bin/bash -c "cd restake && docker compose run --rm app npm run autostake" > ./restake.log 2>&1
 ```
 
 #### Using `systemd-timer`
 
-Systemd-timer allow to run a one-off service with specified rules.
+Systemd-timer allow to run a one-off service with specified rules. This can be used instead, if you run into issues with implementing `crontab`.
 
 ##### Create a systemd unit file
 
@@ -154,7 +167,9 @@ WantedBy=multi-user.target
 
 ##### Create a systemd timer file
 
-The timer file defines the rules for running the restake service every day. All rules are described in the [systemd documentation](https://www.freedesktop.org/software/systemd/man/systemd.timer.html).
+The timer file defines the rules for running the restake service every day. All rules are described in the [systemd documentation](https://www.freedesktop.org/software/systemd/man/systemd.timer.html). 
+
+Note: Helpful calculator for determining restake times for `OnCalendar` can also be found at https://crontab.guru/.
 
 ```bash
 sudo vim /etc/systemd/system/restake.timer
@@ -210,9 +225,6 @@ Create a `src/networks.local.json` file and specify the networks you want to ove
     "prettyName": "Osmosis with Fees",
     "restUrl": [
       "https://rest.validator.com/osmosis"
-    ],
-    "rpcUrl": [
-      "https://rpc.validator.com/osmosis"
     ],
     "gasPrice": "0.001uosmo",
     "autostake": {
