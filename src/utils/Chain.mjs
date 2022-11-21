@@ -1,33 +1,30 @@
+import { compareVersions, validate } from 'compare-versions';
 import ChainAsset from "./ChainAsset.mjs";
 
-const Chain = async (data, directory) => {
-  const chainData = await directory.getChainData(data.name);
-  const tokenData = await directory.getTokenData(data.name);
-
-  const assets = tokenData.assets.map(el => ChainAsset(el))
+const Chain = (data) => {
+  const assets = data.assets?.map(el => ChainAsset(el)) || []
   const baseAsset = assets[0]
-  const base = baseAsset.base
-  const display = baseAsset.display
+  const { cosmos_sdk_version } = data.versions || {}
+  const sdkAuthzAminoSupport = validate(cosmos_sdk_version) && compareVersions(cosmos_sdk_version, '0.46') >= 0
+  const authzSupport = data.authzSupport ?? data.params?.authz
 
   return {
-    prettyName: data.prettyName || chainData.pretty_name,
-    chainId: data.chainId || chainData.chain_id,
-    prefix: data.prefix || chainData.bech32_prefix,
-    slip44: data.slip44 || chainData.slip44 || 118,
-    estimatedApr: chainData.params?.calculated_apr,
-    authzSupport: data.authzSupport ?? chainData.params?.authz,
-    denom: data.denom || baseAsset.base?.denom,
-    display: data.display || baseAsset.display?.denom,
-    symbol: data.symbol || baseAsset.symbol,
-    decimals: data.decimals || baseAsset.decimals,
-    image: data.image || baseAsset.image,
-    coinGeckoId: baseAsset.coingecko_id,
-    services: chainData.services,
-    explorers: chainData.explorers,
+    ...data,
+    prettyName: data.prettyName || data.pretty_name,
+    chainId: data.chainId || data.chain_id,
+    prefix: data.prefix || data.bech32_prefix,
+    slip44: data.slip44 || 118,
+    estimatedApr: data.params?.calculated_apr,
+    authzSupport,
+    authzAminoSupport: data.authzAminoSupport ?? sdkAuthzAminoSupport ?? false,
+    denom: data.denom || baseAsset?.base?.denom,
+    display: data.display || baseAsset?.display?.denom,
+    symbol: data.symbol || baseAsset?.symbol,
+    decimals: data.decimals || baseAsset?.decimals,
+    image: data.image || baseAsset?.image,
+    coinGeckoId: baseAsset?.coingecko_id,
     assets,
-    baseAsset,
-    chainData,
-    tokenData
+    baseAsset
   }
 }
 

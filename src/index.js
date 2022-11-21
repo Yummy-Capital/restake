@@ -20,10 +20,11 @@ const app = (
       <Routes>
         <Route path="/" element={<NetworkFinder />} />
         <Route path="/:network" element={<NetworkFinder />} />
-        <Route path="/:network/govern" element={<NetworkFinder />} />
-        <Route path="/:network/govern/:proposalId" element={<NetworkFinder />} />
+        <Route path="/:network/(vote|govern)" element={<NetworkFinder />} />
+        <Route path="/:network/(vote|govern)/:proposalId" element={<NetworkFinder />} />
         <Route path="/:network/grant" element={<NetworkFinder />} />
         <Route path="/:network/:validator" element={<NetworkFinder />} />
+        <Route path="/:network/:validator/:section" element={<NetworkFinder />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>

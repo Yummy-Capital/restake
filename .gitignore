@@ -30,6 +30,7 @@ yarn-debug.log*
 yarn-error.log*
 
 .vim
+.iml
 
 # Parcel related files
 dist/

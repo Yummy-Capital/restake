@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import _ from 'lodash'
-import { pow, multiply, divide, subtract } from 'mathjs'
+import { pow, multiply, divide, subtract, bignumber } from 'mathjs'
 
 import { MsgSend } from "cosmjs-types/cosmos/bank/v1beta1/tx";
 
@@ -11,7 +11,7 @@ import {
 } from 'react-bootstrap'
 
 import AlertMessage from './AlertMessage';
-import { buildExecableMessage, buildExecMessage, coin } from '../utils/Helpers.mjs';
+import { buildExecableMessage, buildExecMessage, coin, truncateAddress } from '../utils/Helpers.mjs';
 import Coins from './Coins';
 
 function SendModal(props) {
@@ -57,7 +57,7 @@ function SendModal(props) {
     ]
     console.log(messages)
 
-    props.stargateClient.signAndBroadcast(wallet.address, messages, null, state.memoValue).then((result) => {
+    props.signingClient.signAndBroadcast(wallet.address, messages, null, state.memoValue).then((result) => {
       console.log("Successfully broadcasted:", result);
       showLoading(false)
       setState({
@@ -96,9 +96,9 @@ function SendModal(props) {
     const decimals = pow(10, network.decimals)
     const coinValue = coin(multiply(props.balance.amount, 0.95), network.denom)
     const message = buildSendMsg(address, recipient(), [coinValue])
-    props.stargateClient.simulate(wallet.address, [message]).then(gas => {
-      const gasPrice = props.stargateClient.getFee(gas).amount[0].amount
-      const amount = divide(subtract(props.balance.amount, gasPrice), decimals)
+    props.signingClient.simulate(wallet.address, [message]).then(gas => {
+      const gasPrice = props.signingClient.getFee(gas).amount[0].amount
+      const amount = divide(subtract(bignumber(props.balance.amount), gasPrice), decimals)
 
       setState({...state, amountValue: amount > 0 ? amount : 0})
     }, error => {
@@ -166,7 +166,7 @@ function SendModal(props) {
                       if (props.address === address) return null
 
                       return (
-                        <option key={address} value={address}>{label || address}</option>
+                        <option key={address} value={address}>{label || truncateAddress(address)}</option>
                       )
                     })}
                   </optgroup>
@@ -188,7 +188,7 @@ function SendModal(props) {
                     </div>
                     {props.balance &&
                       <div className="form-text text-end"><span role="button" onClick={() => setAvailableAmount()}>
-                        Available: <Coins coins={props.balance} asset={network.baseAsset} />
+                        Available: <Coins coins={props.balance} asset={network.baseAsset} fullPrecision={true} hideValue={true} />
                       </span></div>
                     }
                   </div>
@@ -200,7 +200,7 @@ function SendModal(props) {
                 <p className="text-end">
                   {!loading
                     ? (
-                      <Button type="submit" className="btn btn-primary ms-2" disabled={!valid()}>Send {coinAmount() && <Coins coins={coinAmount()} asset={network.baseAsset} />}</Button>
+                      <Button type="submit" className="btn btn-primary ms-2" disabled={!valid()}>Send {coinAmount() && <Coins coins={coinAmount()} asset={network.baseAsset} fullPrecision={true} hideValue={true} />}</Button>
                     )
                     : <Button className="btn btn-primary" type="button" disabled>
                       <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>&nbsp;

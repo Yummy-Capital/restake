@@ -9,10 +9,14 @@
   {
     "name": "juno",
     "gasPrice": "0.0025ujuno",
-    "ownerAddress": "junovaloper19ur8r2l25qhsy9xvej5zgpuc5cpn6syydmwtrt"
+    "ownerAddress": "junovaloper19ur8r2l25qhsy9xvej5zgpuc5cpn6syydmwtrt",
+    "autostake": {
+      "batchTxs": 25
+    }
   },
   {
     "name": "cosmoshub",
+    "ownerAddress": "cosmosvaloper1a37ze3yrr2y9nn98l6frhjskmufvd40cpyd0gq",
     "gasPrice": "0.0025uatom"
   },
   {
@@ -21,8 +25,9 @@
   },
   {
     "name": "chihuahua",
-    "gasPrice": "0.025uhuahua",
-    "ownerAddress": "chihuahuavaloper19vwcee000fhazmpt4ultvnnkhfh23ppwxll8zz"
+    "ownerAddress": "chihuahuavaloper19vwcee000fhazmpt4ultvnnkhfh23ppwxll8zz",
+    "gasPrice": "1uhuahua",
+    "gasPricePrefer": "1uhuahua"
   },
   {
     "name": "gravitybridge",
@@ -38,7 +43,7 @@
   },
   {
     "name": "terra",
-    "gasPrice": "0.015uluna"
+    "gasPrice": "5.665uluna"
   },
   {
     "name": "terra2",
@@ -78,7 +83,8 @@
     "name": "evmos",
     "txTimeout": 120000,
     "ownerAddress": "evmosvaloper1umk407eed7af6anvut6llg2zevnf0dn0feqqny",
-    "maxPerDay": 1
+    "maxPerDay": 1,
+    "ledgerSupport": false
   },
   {
     "name": "sifchain",
@@ -142,7 +148,8 @@
   {
     "name": "secretnetwork",
     "gasPrice": "0.025uscrt",
-    "gasPricePrefer": "0.05uscrt"
+    "gasPricePrefer": "0.05uscrt",
+    "authzAminoSupport": true
   },
   {
     "name": "bostrom",
@@ -215,5 +222,42 @@
   {
     "name": "kichaintestnet",
     "testnet": true
+  },
+  {
+    "name": "likecoin",
+    "gasPrice": "10nanolike"
+  },
+  {
+    "name": "passage",
+    "ownerAddress": "pasgvaloper196rujtjehu0dfc7y85lkcaps6tel76g3l9knjy"
+  },
+  {
+    "name": "stride",
+    "ownerAddress": "stridevaloper1x2kta40h5rnymtjn6ys7vk2d87xu7y6zfu9j3r",
+    "gasPriceStep": {
+      "low": 0,
+      "average": 0.025,
+      "high": 0.04
+    }
+  },
+  {
+    "name": "pulsar",
+    "testnet": true
+  },
+  {
+    "name": "teritori",
+    "ownerAddress": "torivaloper1d5u07lhelk6lal44a0myvufurvsqk5d499h9hz",
+    "gasPriceStep": {
+      "low": 0,
+      "average": 0.025,
+      "high": 0.04
+    }
+  },
+  {
+    "name": "rebus"
+  },
+  {
+    "name": "jackal",
+    "ownerAddress": "jklvaloper1rdyunvvqg2l3723hlyjvvsnkd4vg338uar8q2s"
   }
 ]

@@ -16,6 +16,7 @@ import RevokeGrant from './RevokeGrant';
 import Coins from './Coins';
 import GrantModal from './GrantModal';
 import Favourite from './Favourite';
+import Address from './Address'
 
 function Grants(props) {
   const { address, wallet, network, operators, validators, grants } = props
@@ -29,7 +30,7 @@ function Grants(props) {
   const [filter, setFilter] = useState({keywords: '', group: 'granter'})
   const [results, setResults] = useState([])
 
-  const isNanoLedger = props.wallet?.getIsNanoLedger()
+  const walletAuthzSupport = props.wallet?.authzSupport()
 
   useEffect(() => {
     if(!grants) return
@@ -97,8 +98,11 @@ function Grants(props) {
       case "/cosmos.staking.v1beta1.StakeAuthorization":
         return (
           <small>
-            Maximum: {maxTokens ? <Coins coins={maxTokens} asset={network.baseAsset} /> : 'unlimited'}<br />
-            Validators: {grant.authorization.allow_list.address.join(', ')}
+            Maximum: {maxTokens ? <Coins coins={maxTokens} asset={network.baseAsset} fullPrecision={true} hideValue={true} /> : 'unlimited'}<br />
+            Validators: {grant.authorization.allow_list.address.map(address => {
+              const validator = validators[address]
+              return <div>{validator?.moniker || <Address address={address} />}</div>
+            })}
           </small>
         )
       case "/cosmos.authz.v1beta1.GenericAuthorization":
@@ -137,10 +141,10 @@ function Grants(props) {
           {filter.group === 'grantee' ? (
             <div className="d-flex">
               <Favourite favourites={props.favouriteAddresses} value={granter} toggle={props.toggleFavouriteAddress} />
-              <span className="ps-2">{favourite?.label || granter}</span>
+              <span className="ps-2">{favourite?.label || <Address address={granter} />}</span>
             </div>
           ) : (
-            validator ? validator.moniker : favourite?.label || grantee
+            validator ? validator.moniker : favourite?.label || <Address address={grantee} />
           )}
         </td>
         <td>
@@ -165,7 +169,7 @@ function Grants(props) {
                   button={true}
                   size="sm"
                   grants={[grant]}
-                  stargateClient={props.stargateClient}
+                  signingClient={props.signingClient}
                   onRevoke={onRevoke}
                   setLoading={(loading) =>
                     setGrantLoading({ [grantId]: loading })
@@ -202,9 +206,9 @@ function Grants(props) {
   const alerts = (
     <>
       {!props.grantQuerySupport && (
-        <AlertMessage variant="warning">This network doesn't fully support this feature just yet. <span role="button" className="text-decoration-underline" onClick={props.showFavouriteAddresses}>Save addresses</span> to see them here.</AlertMessage>
+        <AlertMessage variant="warning">Grants cannot be queried on this network yet. <span role="button" className="text-decoration-underline" onClick={props.showFavouriteAddresses}>Save addresses</span> first to see their grants.</AlertMessage>
       )}
-      {props.grantQuerySupport && isNanoLedger && (
+      {props.grantQuerySupport && !walletAuthzSupport && (
         <AlertMessage
           variant="warning"
           dismissible={false}
@@ -260,7 +264,7 @@ function Grants(props) {
           </div>
           <div className="flex-fill d-flex justify-content-end">
             <Button variant="primary" disabled={!wallet?.hasPermission(address, 'Grant')} onClick={() => setShowModal(true)}>
-              {address && !isNanoLedger ? 'New Grant' : 'CLI/Ledger Instructions'}
+              {address && !!walletAuthzSupport ? 'New Grant' : 'CLI/Ledger Instructions'}
             </Button>
           </div>
         </div>
@@ -292,7 +296,7 @@ function Grants(props) {
         address={props.address}
         wallet={props.wallet}
         favouriteAddresses={props.favouriteAddresses}
-        stargateClient={props.stargateClient}
+        signingClient={props.signingClient}
         onHide={closeModal}
         onGrant={onGrant}
       />

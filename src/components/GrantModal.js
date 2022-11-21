@@ -15,29 +15,30 @@ import {
 
 import AlertMessage from './AlertMessage';
 import { messageTypes } from '../utils/Wallet.mjs';
-import { buildExecMessage } from '../utils/Helpers.mjs';
+import { buildExecMessage, truncateAddress } from '../utils/Helpers.mjs';
 
 function GrantModal(props) {
   const { show, network, address, wallet } = props
-  const isNanoLedger = props.wallet?.getIsNanoLedger()
+  const walletAuthzSupport = wallet?.authzSupport()
   const defaultExpiry = moment().add(1, 'year')
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState()
   const [state, setState] = useState({ maxTokensValue: '', expiryDateValue: defaultExpiry.format('YYYY-MM-DD') });
-  const [showLedger, setShowLedger] = useState(isNanoLedger)
+  const [showLedger, setShowLedger] = useState(!walletAuthzSupport)
 
-  const { daemon_name, chain_id } = network.chain.chainData
+  const { daemon_name, chain_id } = network.chain
 
   useEffect(() => {
     setState({
       ...state,
       granteeValue: '',
+      customGranteeValue: '',
       expiryDateValue: defaultExpiry.format('YYYY-MM-DD'),
       grantTypeValue: '/cosmos.authz.v1beta1.GenericAuthorization',
       messageTypeValue: messageTypes[0],
       customMessageTypeValue: '',
     })
-    setShowLedger(isNanoLedger)
+    setShowLedger(!walletAuthzSupport)
     setError(null)
   }, [address])
 
@@ -56,7 +57,7 @@ function GrantModal(props) {
 
   function handleSubmit(event) {
     event.preventDefault()
-    if(!address || isNanoLedger || !valid()) return
+    if(!address || !walletAuthzSupport || !valid()) return
 
     showLoading(true)
     const expiry = moment(state.expiryDateValue)
@@ -71,7 +72,7 @@ function GrantModal(props) {
     ]
     console.log(messages)
 
-    props.stargateClient.signAndBroadcast(wallet.address, messages).then((result) => {
+    props.signingClient.signAndBroadcast(wallet.address, messages).then((result) => {
       console.log("Successfully broadcasted:", result);
       showLoading(false)
       props.onGrant(grantee(), {
@@ -147,7 +148,7 @@ function GrantModal(props) {
       <Modal show={show} onHide={handleClose}>
         <Modal.Header closeButton>
           <Modal.Title className="text-truncate pe-4">
-          {address && !isNanoLedger ? 'New Grant' : 'CLI/Ledger instructions'}
+          {address && !!walletAuthzSupport ? 'New Grant' : 'CLI/Ledger instructions'}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -156,7 +157,7 @@ function GrantModal(props) {
               {error}
             </AlertMessage>
           }
-          {!address || isNanoLedger && (
+          {!address || !walletAuthzSupport && (
             <>
               <p>Enter your grant details to generate the relevant CLI command.</p>
             </>
@@ -172,7 +173,7 @@ function GrantModal(props) {
                       if (props.address === address) return null
 
                       return (
-                        <option key={address} value={address}>{label || address}</option>
+                        <option key={address} value={address}>{label || truncateAddress(address)}</option>
                       )
                     })}
                   </optgroup>
@@ -214,7 +215,7 @@ function GrantModal(props) {
               </>
             )}
             <p><strong>Incorrect use of Authz grants can be as dangerous as giving away your mnemonic.</strong> Make sure you trust the Grantee address and understand the permissions you are granting.</p>
-            {address && !isNanoLedger && (
+            {address && !!walletAuthzSupport && (
               <p className="text-end">
                 <Button
                   variant="link"

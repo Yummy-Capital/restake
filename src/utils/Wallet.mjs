@@ -18,16 +18,19 @@ export const messageTypes = [
 class Wallet {
   constructor(network, signer, key){
     this.network = network
-    this.signingClient = SigningClient(network, signer)
     this.signer = signer
     this.key = key
     this.name = key?.name
     this.grants = []
   }
 
+  signingClient(){
+    return SigningClient(this.network, this.signer)
+  }
+
   hasPermission(address, action){
     if(address === this.address) return true
-    if(this.getIsNanoLedger()) return false // Ledger Authz disabled for now
+    if(!this.authzSupport()) return false
 
     let message = messageTypes.find(el => {
       return el.split('.').slice(-1)[0].replace('Msg', '') === action
@@ -38,6 +41,10 @@ class Wallet {
         grant.authorization["@type"] === "/cosmos.authz.v1beta1.GenericAuthorization" &&
         grant.authorization.msg === message
     })
+  }
+
+  authzSupport(){
+    return this.signer.signDirect || (this.network.authzAminoSupport && this.signer.signAmino)
   }
 
   async getAddress(){
@@ -61,7 +68,7 @@ class Wallet {
 
   getIsNanoLedger() {
     if(!this.key) return false
-    return this.key.isNanoLedger;
+    return this.key.isNanoLedger || this.key.isHardware;
   }
 }
 

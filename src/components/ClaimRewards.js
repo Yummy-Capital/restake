@@ -1,36 +1,39 @@
 import { MsgWithdrawDelegatorReward, MsgWithdrawValidatorCommission } from "cosmjs-types/cosmos/distribution/v1beta1/tx";
 import { MsgDelegate } from "cosmjs-types/cosmos/staking/v1beta1/tx";
-import { buildExecableMessage, buildExecMessage, coin } from "../utils/Helpers.mjs";
+import { buildExecableMessage, buildExecMessage, coin, rewardAmount } from "../utils/Helpers.mjs";
 
 import {
-  Dropdown
+  Dropdown,
+  Button
 } from 'react-bootstrap'
 
-import { add, subtract, multiply, divide, bignumber, floor } from 'mathjs'
+import { add, subtract, multiply, divide, bignumber } from 'mathjs'
 
 function ClaimRewards(props) {
-  const { address, wallet, stargateClient, validatorRewards } = props
+  const { network, address, wallet, signingClient, rewards } = props
 
   async function claim(){
+    props.setError()
     props.setLoading(true)
 
+    const validatorRewards = mapRewards()
     const gasSimMessages = buildMessages(validatorRewards)
 
     let gas
     try {
-      gas = await stargateClient.simulate(wallet.address, gasSimMessages)
+      gas = await signingClient.simulate(wallet.address, gasSimMessages)
     } catch (error) {
       props.setLoading(false)
       props.setError('Failed to broadcast: ' + error.message)
       return
     }
 
-    const fee = stargateClient.getFee(gas)
+    const fee = signingClient.getFee(gas)
     const feeAmount = fee.amount[0].amount
 
     const totalReward = validatorRewards.reduce((sum, validatorReward) => add(sum, bignumber(validatorReward.reward)), 0);
     const adjustedValidatorRewards = validatorRewards.map(validatorReward => {
-      const shareOfFee = multiply(divide(validatorReward.reward, totalReward), feeAmount); // To take a proportional amount from each validator relative to total reward
+      const shareOfFee = multiply(divide(bignumber(validatorReward.reward), totalReward), feeAmount); // To take a proportional amount from each validator relative to total reward
       return {
         validatorAddress: validatorReward.validatorAddress,
         reward: subtract(validatorReward.reward, shareOfFee),
@@ -45,7 +48,7 @@ function ClaimRewards(props) {
 
     let messages = buildMessages(adjustedValidatorRewards)
     try {
-      gas = gas || await stargateClient.simulate(wallet.address, messages)
+      gas = gas || await signingClient.simulate(wallet.address, messages)
     } catch (error) {
       props.setLoading(false)
       props.setError('Failed to broadcast: ' + error.message)
@@ -53,7 +56,7 @@ function ClaimRewards(props) {
     }
     console.log(messages, gas)
 
-    const signAndBroadcast = stargateClient.signAndBroadcastWithoutBalanceCheck
+    const signAndBroadcast = signingClient.signAndBroadcastWithoutBalanceCheck
     signAndBroadcast(wallet.address, messages, gas).then((result) => {
       console.log("Successfully broadcasted:", result);
       props.setLoading(false)
@@ -65,6 +68,21 @@ function ClaimRewards(props) {
     })
   }
 
+  function mapRewards() {
+    if (!rewards) return [];
+
+    const validatorRewards = rewards
+      .map(reward => {
+        return {
+          validatorAddress: reward.validator_address,
+          reward: rewardAmount(reward, network.denom),
+        }
+      })
+      .filter(validatorReward => validatorReward.reward );
+
+    return validatorRewards;
+  }
+
   // Expects a map of string -> string (validator -> reward)
   function buildMessages(validatorRewards){
     return validatorRewards.map(validatorReward => {
@@ -74,7 +92,7 @@ function ClaimRewards(props) {
         valMessages.push(buildExecableMessage(MsgDelegate, "/cosmos.staking.v1beta1.MsgDelegate", {
           delegatorAddress: address,
           validatorAddress: validatorReward.validatorAddress,
-          amount: coin(validatorReward.reward, props.network.denom)
+          amount: coin(validatorReward.reward, network.denom)
         }, wallet?.address !== address))
       }else{
         valMessages.push(buildExecableMessage(MsgWithdrawDelegatorReward, "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward", {
@@ -106,6 +124,8 @@ function ClaimRewards(props) {
   }
 
   function buttonText() {
+    if(props.buttonText) return props.buttonText
+
     if(props.restake){
       return 'Manual Compound'
     }else if(props.commission){
@@ -117,9 +137,15 @@ function ClaimRewards(props) {
 
   return (
     <>
-      <Dropdown.Item disabled={props.disabled || !hasPermission()} onClick={() => claim()}>
-        {buttonText()}
-      </Dropdown.Item>
+      {props.button ? (
+        <Button variant={props.variant} size={props.size} disabled={props.disabled || !hasPermission()} onClick={() => claim()}>
+          {buttonText()}
+        </Button>
+      ) : (
+        <Dropdown.Item as="button" disabled={props.disabled || !hasPermission()} onClick={() => claim()}>
+          {buttonText()}
+        </Dropdown.Item>
+      )}
     </>
   )
 }
